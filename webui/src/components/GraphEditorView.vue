@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { VueFlow, type Node, type Edge } from '@vue-flow/core'
+import { ref, computed, onMounted } from 'vue'
+import { VueFlow, type Node, type Edge, type Connection, ConnectionMode, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
 import '@vue-flow/core/dist/style.css'
@@ -9,6 +9,16 @@ import '@vue-flow/core/dist/theme-default.css'
 const emit = defineEmits<{
   close: []
 }>()
+
+// VueFlow instance
+const { fitView, setCenter, zoomTo } = useVueFlow()
+
+// Auto-fit on mount
+onMounted(() => {
+  setTimeout(() => {
+    fitView({ padding: 0.2, duration: 300 })
+  }, 100)
+})
 
 // Node parameter storage
 interface DelayParameters {
@@ -28,14 +38,6 @@ const nodeParameters = ref<Record<string, DelayParameters>>({
     stereoWidth: 100,
     damping: 0,
     pingPongAmount: 75,
-  },
-  '3': {
-    delayTime: 300,
-    feedback: 60,
-    wetDry: 50,
-    stereoWidth: 100,
-    damping: 10,
-    pingPongAmount: 80,
   },
 })
 
@@ -68,33 +70,26 @@ const nodes = ref<Node[]>([
     id: '1',
     type: 'input',
     label: 'Input',
-    position: { x: 50, y: 150 },
+    position: { x: 250, y: 50 },
   },
   {
     id: '2',
-    label: 'Delay L',
-    position: { x: 250, y: 100 },
-    data: { type: 'delay' },
-  },
-  {
-    id: '3',
-    label: 'Delay R',
-    position: { x: 250, y: 200 },
+    label: 'Delay',
+    position: { x: 350, y: 200 },
     data: { type: 'delay' },
   },
   {
     id: '4',
     type: 'output',
     label: 'Output',
-    position: { x: 450, y: 150 },
+    position: { x: 250, y: 350 },
   },
 ])
 
 const edges = ref<Edge[]>([
   { id: 'e1-2', source: '1', target: '2', animated: true },
-  { id: 'e1-3', source: '1', target: '3', animated: true },
+  { id: 'e1-4', source: '1', target: '4', animated: true },
   { id: 'e2-4', source: '2', target: '4', animated: true },
-  { id: 'e3-4', source: '3', target: '4', animated: true },
 ])
 
 // Context menu
@@ -151,10 +146,16 @@ const onPaneContextMenu = (event: MouseEvent | TouchEvent) => {
 
 const addNewDelay = () => {
   const newId = String(nextNodeId++)
+  
+  // Find a good Y position between Input and Output
+  const delayNodes = nodes.value.filter(n => n.data?.type === 'delay')
+  const yPosition = 150 + (delayNodes.length * 80)
+  const xPosition = 150 + (delayNodes.length % 3) * 150
+  
   const newNode: Node = {
     id: newId,
     label: `Delay ${newId}`,
-    position: { x: 250, y: 50 + nodes.value.length * 60 },
+    position: { x: xPosition, y: yPosition },
     data: { type: 'delay' },
   }
   
@@ -244,6 +245,39 @@ const deleteNode = () => {
   
   contextMenu.value.show = false
 }
+
+const onConnect = (params: Connection) => {
+  const newEdge: Edge = {
+    id: `e${params.source}-${params.target}-${Date.now()}`,
+    source: params.source,
+    target: params.target,
+    sourceHandle: params.sourceHandle || undefined,
+    targetHandle: params.targetHandle || undefined,
+    animated: true,
+  }
+  edges.value.push(newEdge)
+}
+
+const fitGraph = () => {
+  fitView({ padding: 0.2, duration: 300 })
+}
+
+const centerGraph = () => {
+  const allNodes = nodes.value
+  if (allNodes.length === 0) return
+  
+  // Calculate center of all nodes
+  const sumX = allNodes.reduce((sum, node) => sum + node.position.x, 0)
+  const sumY = allNodes.reduce((sum, node) => sum + node.position.y, 0)
+  const centerX = sumX / allNodes.length
+  const centerY = sumY / allNodes.length
+  
+  setCenter(centerX, centerY, { duration: 300, zoom: 1 })
+}
+
+const resetZoom = () => {
+  zoomTo(1, { duration: 300 })
+}
 </script>
 
 <template>
@@ -271,11 +305,11 @@ const deleteNode = () => {
           <div class="control-group">
             <div class="control-header">
               <label>Delay Time</label>
-              <span class="control-value">{{ formatTime(currentParams.delayTime) }}</span>
+              <span class="control-value">{{ formatTime(currentParams!.delayTime) }}</span>
             </div>
             <input 
               type="range" 
-              v-model.number="currentParams.delayTime" 
+              v-model.number="currentParams!.delayTime" 
               min="10" 
               max="2000" 
               step="1"
@@ -291,11 +325,11 @@ const deleteNode = () => {
           <div class="control-group">
             <div class="control-header">
               <label>Feedback</label>
-              <span class="control-value">{{ currentParams.feedback }}%</span>
+              <span class="control-value">{{ currentParams!.feedback }}%</span>
             </div>
             <input 
               type="range" 
-              v-model.number="currentParams.feedback" 
+              v-model.number="currentParams!.feedback" 
               min="0" 
               max="100" 
               step="1"
@@ -311,11 +345,11 @@ const deleteNode = () => {
           <div class="control-group">
             <div class="control-header">
               <label>Wet/Dry Mix</label>
-              <span class="control-value">{{ currentParams.wetDry }}%</span>
+              <span class="control-value">{{ currentParams!.wetDry }}%</span>
             </div>
             <input 
               type="range" 
-              v-model.number="currentParams.wetDry" 
+              v-model.number="currentParams!.wetDry" 
               min="0" 
               max="100" 
               step="1"
@@ -331,11 +365,11 @@ const deleteNode = () => {
           <div class="control-group">
             <div class="control-header">
               <label>Ping Pong Amount</label>
-              <span class="control-value">{{ currentParams.pingPongAmount }}%</span>
+              <span class="control-value">{{ currentParams!.pingPongAmount }}%</span>
             </div>
             <input 
               type="range" 
-              v-model.number="currentParams.pingPongAmount" 
+              v-model.number="currentParams!.pingPongAmount" 
               min="0" 
               max="100" 
               step="1"
@@ -351,11 +385,11 @@ const deleteNode = () => {
           <div class="control-group">
             <div class="control-header">
               <label>Stereo Width</label>
-              <span class="control-value">{{ currentParams.stereoWidth }}%</span>
+              <span class="control-value">{{ currentParams!.stereoWidth }}%</span>
             </div>
             <input 
               type="range" 
-              v-model.number="currentParams.stereoWidth" 
+              v-model.number="currentParams!.stereoWidth" 
               min="0" 
               max="200" 
               step="1"
@@ -371,11 +405,11 @@ const deleteNode = () => {
           <div class="control-group">
             <div class="control-header">
               <label>Damping</label>
-              <span class="control-value">{{ currentParams.damping }}%</span>
+              <span class="control-value">{{ currentParams!.damping }}%</span>
             </div>
             <input 
               type="range" 
-              v-model.number="currentParams.damping" 
+              v-model.number="currentParams!.damping" 
               min="0" 
               max="100" 
               step="1"
@@ -399,6 +433,27 @@ const deleteNode = () => {
     <aside class="graph-panel">
       <div class="graph-header">
         <h2>Signal Graph</h2>
+        <div class="graph-controls">
+          <button @click="fitGraph" class="graph-control-btn" title="Fit to View">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+            </svg>
+          </button>
+          <button @click="centerGraph" class="graph-control-btn" title="Center Graph">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <circle cx="12" cy="12" r="10" />
+            </svg>
+          </button>
+          <button @click="resetZoom" class="graph-control-btn" title="Reset Zoom">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+              <path d="M11 8v6" />
+              <path d="M8 11h6" />
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="graph-container">
         <VueFlow 
@@ -407,10 +462,12 @@ const deleteNode = () => {
           :default-zoom="1"
           :min-zoom="0.5"
           :max-zoom="2"
+          :connection-mode="ConnectionMode.Loose"
           @node-click="onNodeClick"
           @pane-click="onPaneClick"
           @node-context-menu="onNodeContextMenu"
           @pane-context-menu="onPaneContextMenu"
+          @connect="onConnect"
         >
           <Background pattern-color="#3b4261" :gap="16" />
           <Controls />
@@ -495,12 +552,51 @@ const deleteNode = () => {
 .graph-header {
   padding: 2rem 2rem 1rem;
   border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .graph-header h2 {
   font-size: 1.5rem;
   font-weight: 500;
   color: var(--text-primary);
+}
+
+.graph-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.graph-control-btn {
+  width: 36px;
+  height: 36px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  padding: 0;
+}
+
+.graph-control-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.graph-control-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+.graph-control-btn:active {
+  transform: translateY(0);
 }
 
 .graph-container {
