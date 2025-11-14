@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import SidePanel from './SidePanel.vue'
-import MainView from './MainView.vue'
 import SettingsView from './SettingsView.vue'
-import GraphEditorView from './GraphEditorView.vue'
+import CRTPluginView from './CRTPluginView.vue'
+import CRTGraphEditor from './CRTGraphEditor.vue'
 
-type ViewState = 'main' | 'settings' | 'graph'
+type ViewState = 'settings' | 'crt' | 'crt-graph'
 
-const currentView = ref<ViewState>('main')
+const currentView = ref<ViewState>('crt-graph')
 
 const navigateTo = (view: ViewState) => {
   currentView.value = view
@@ -22,9 +22,9 @@ const navigateTo = (view: ViewState) => {
     />
     
     <Transition name="view-transition" mode="out-in">
-      <MainView v-if="currentView === 'main'" key="main" />
+      <CRTGraphEditor v-if="currentView === 'crt-graph'" key="crt-graph" />
+      <CRTPluginView v-else-if="currentView === 'crt'" key="crt" />
       <SettingsView v-else-if="currentView === 'settings'" key="settings" />
-      <GraphEditorView v-else-if="currentView === 'graph'" key="graph" @close="navigateTo('main')" />
     </Transition>
   </div>
 </template>

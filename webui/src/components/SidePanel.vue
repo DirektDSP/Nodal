@@ -1,10 +1,10 @@
 <script setup lang="ts">
 defineProps<{
-  currentView: 'main' | 'settings' | 'graph'
+  currentView: 'settings' | 'crt' | 'crt-graph'
 }>()
 
 const emit = defineEmits<{
-  navigate: [view: 'main' | 'settings' | 'graph']
+  navigate: [view: 'settings' | 'crt' | 'crt-graph']
 }>()
 </script>
 
@@ -13,19 +13,34 @@ const emit = defineEmits<{
     <nav class="nav-items">
       <button 
         class="nav-button"
-        :class="{ active: currentView === 'graph' }"
-        @click="emit('navigate', 'graph')"
-        title="Graph Editor"
+        :class="{ active: currentView === 'crt-graph' }"
+        @click="emit('navigate', 'crt-graph')"
+        title="CRT Graph Editor"
       >
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="6" cy="6" r="3" />
-          <circle cx="18" cy="6" r="3" />
-          <circle cx="18" cy="18" r="3" />
-          <circle cx="6" cy="18" r="3" />
-          <line x1="8.5" y1="7" x2="15.5" y2="7" />
-          <line x1="8.5" y1="17" x2="15.5" y2="17" />
-          <line x1="6" y1="9" x2="6" y2="15" />
-          <line x1="18" y1="9" x2="18" y2="15" />
+          <rect x="2" y="3" width="20" height="14" rx="2" />
+          <circle cx="6" cy="10" r="2" />
+          <circle cx="18" cy="10" r="2" />
+          <line x1="8" y1="10" x2="16" y2="10" />
+          <path d="M8 21h8" />
+          <path d="M12 17v4" />
+        </svg>
+      </button>
+
+      <button 
+        class="nav-button"
+        :class="{ active: currentView === 'crt' }"
+        @click="emit('navigate', 'crt')"
+        title="CRT Plugin UI"
+      >
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2" />
+          <path d="M8 21h8" />
+          <path d="M12 17v4" />
+          <line x1="2" y1="7" x2="22" y2="7" />
+          <circle cx="8" cy="10" r="1.5" />
+          <circle cx="12" cy="10" r="1.5" />
+          <circle cx="16" cy="10" r="1.5" />
         </svg>
       </button>
 
@@ -41,19 +56,6 @@ const emit = defineEmits<{
           <path d="M4 4l3.5 3.5M16.5 16.5L20 20M20 4l-3.5 3.5M7.5 16.5L4 20" />
         </svg>
       </button>
-
-      <button 
-        class="nav-button"
-        :class="{ active: currentView === 'main' }"
-        @click="emit('navigate', 'main')"
-        title="Info"
-      >
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="12" y1="16" x2="12" y2="12" />
-          <line x1="12" y1="8" x2="12.01" y2="8" />
-        </svg>
-      </button>
     </nav>
   </aside>
 </template>
@@ -61,48 +63,59 @@ const emit = defineEmits<{
 <style scoped>
 .side-panel {
   width: 80px;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border-color);
+  background: #0a0a0a;
+  border-right: 1px solid rgba(0, 255, 136, 0.2);
   display: flex;
   flex-direction: column;
   position: relative;
   z-index: 10;
+  box-shadow: inset -5px 0 20px rgba(0, 0, 0, 0.8);
 }
 
 .nav-items {
   display: flex;
   flex-direction: column;
-  justify-content: space-evenly;
+  justify-content: center;
   align-items: center;
   height: 100%;
   padding: 2rem 0;
+  gap: 2rem;
 }
 
 .nav-button {
-  background: transparent;
-  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 255, 136, 0.2);
   cursor: pointer;
   padding: 1rem;
-  border-radius: 8px;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: #00ff88;
+  clip-path: polygon(
+    8px 0, calc(100% - 8px) 0, 100% 8px,
+    100% calc(100% - 8px), calc(100% - 8px) 100%,
+    8px 100%, 0 calc(100% - 8px), 0 8px
+  );
 }
 
 .nav-button:hover {
-  background: var(--hover-bg);
-  color: var(--text-primary);
+  background: rgba(0, 255, 136, 0.1);
+  border-color: #00ff88;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+  transform: scale(1.05);
 }
 
 .nav-button.active {
-  background: var(--accent-primary);
-  color: var(--bg-primary);
+  background: rgba(0, 255, 136, 0.2);
+  border-color: #00ff88;
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.5), inset 0 0 20px rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+  text-shadow: 0 0 10px #00ff88;
 }
 
 .icon {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
 }
 </style>
